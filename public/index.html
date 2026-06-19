@@ -545,8 +545,14 @@ async function generateReading() {
     });
 
     if (!resp.ok) {
-      const err = await resp.json();
-      throw new Error(err.error || 'Server error ' + resp.status);
+      const raw = await resp.text();
+      let err;
+      try {
+        err = JSON.parse(raw);
+      } catch {
+        err = { error: raw };
+      }
+      throw new Error(err.error || 'Server error');
     }
 
     const data = await resp.json();
