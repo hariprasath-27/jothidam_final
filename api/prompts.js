@@ -1,4 +1,14 @@
 
+ 
+function getHouseName(h) {
+  const names = {
+    1:'Self/Body',2:'Wealth/Family',3:'Siblings/Courage',4:'Home/Mother',
+    5:'Children/Intelligence',6:'Enemies/Health',7:'Marriage/Partner',8:'Longevity/Occult',
+    9:'Luck/Father/Dharma',10:'Career/Status',11:'Gains/Income',12:'Loss/Liberation'
+  };
+  return names[h] || '';
+}
+ 
 'use strict';
  
 function buildReadingPrompt(chart, person, question) {
