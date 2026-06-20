@@ -1,115 +1,125 @@
+
 'use strict';
 const Anthropic = require('@anthropic-ai/sdk');
-const { buildFullChart } = require('./ephemeris');
+const { buildFullChart, HOUSE_SIGNIF } = require('./ephemeris');
  
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
  
-function getChartSummary(chart, person, age, today) {
+// ── Master system prompt — one-percent astrologer ──
+const MASTER_SYSTEM = `You are the most knowledgeable Tamil Jyotish astrologer alive. You have 40 years of direct practice and have memorised Brihat Parasara Hora Shastra, Jaimini Sutras, Phala Deepika, Saravali, and classical Tamil Nadi texts. Families travel from distant villages to consult you. Your reputation rests entirely on accuracy.
+ 
+YOUR KNOWLEDGE IS COMPLETE:
+— You know every Yoga: how it forms, when it activates, what it gives, what cancels it
+— You know every Dosha: exact conditions, exact nullification rules, exact severity
+— You know Dasha system completely: which Mahadasha period gave what result, what the current period is activating RIGHT NOW, what is coming
+— You know planetary strength (Bala): exalted planets give full results, debilitated give reversed results, own-sign gives steady results, friendly gives 75%, neutral gives 50%, enemy gives 25%
+— You know house significations deeply: which planets ruling which houses create which results when conjoined or aspecting
+— You know transit effects (Gochara): especially Saturn and Jupiter transits over natal Moon
+— You know Neecha Bhanga: exactly when a debilitated planet becomes a Raja Yoga
+— You know Vipareeta Raja Yoga: exactly when 6th/8th/12th lords in dusthanas create unexpected power
+— You know exact Mangal Dosha rules and all 8 cancellation conditions
+— You know Kaal Sarpa: ascending vs descending, which houses Rahu-Ketu occupy, what it gives, what reduces it
+— You know Nakshatra qualities: each nakshatra's deity, symbol, nature, what kind of person it produces
+— You know Nadi: Vata/Pitta/Kapha constitution and how it affects health, temperament, longevity
+ 
+WHAT YOU NEVER DO:
+— Never give vague statements like "good results expected" — always say WHY (which planet in which house)
+— Never miss a Dosha — check all classical Doshas
+— Never miss a Yoga — check all major Yogas
+— Never say a Dosha is active without checking ALL nullification conditions
+— Never guess — if you are citing a planet's position, it must match the chart given
+— Never use bullet points — only flowing paragraphs with clear headings
+— Never be generic — every sentence must be specific to THIS person's chart
+ 
+FORMAT:
+— === SECTION TITLE === for main sections
+— --- Sub Heading --- for sub-topics inside sections
+— 2 detailed paragraphs minimum under every sub-heading
+— Speak directly to the person as "you"
+— Be warm, authoritative, specific`;
+ 
+function buildChartContext(chart, person, age, today) {
   const p = chart.planets;
   const d = chart.dasha;
-  const planetLines = Object.entries(p)
-    .map(([n,data])=>`${n}:${data.rasi} H${data.house} ${data.status.split(' ')[0]}`)
+ 
+  const planetLines = Object.entries(p).map(([n,x]) =>
+    `${n}: ${x.rasi} H${x.house} ${x.degInRasi.toFixed(2)}° | ${x.status} | Bala:${x.bala} | Nakshatra:${x.nakshatra} P${x.pada} | Aspects H:${x.aspects?.join(',')}`
+  ).join('\n');
+ 
+  const yogaLines = chart.yogas.map(y =>
+    `[${y.type.toUpperCase()}${y.nullified ? ' NULLIFIED' : ''}] ${y.name}: ${y.desc}${y.nullifiers?.length ? ' | NULLIFIED BY: ' + y.nullifiers.join('; ') : ''}`
+  ).join('\n');
+ 
+  const houseLines = Object.entries(chart.houses)
+    .map(([h, pl]) => `H${h} (${HOUSE_SIGNIF[h]?.split(',')[0]}): ${pl.length ? pl.join(', ') : 'Empty'}`)
+    .join('\n');
+ 
+  const aspectLines = Object.entries(chart.houseAspects || {})
+    .filter(([, pl]) => pl.length)
+    .map(([h, pl]) => `H${h} aspected by: ${pl.join(', ')}`)
     .join(' | ');
-  const yogaLines = chart.yogas.map(y=>y.name).join(', ');
+ 
+  const antarLines = d.antardashas.map(a =>
+    `${d.current?.lord}-${a.lord}: ${a.startDate.slice(0,7)} to ${a.endDate.slice(0,7)}${a === d.currentAntar ? ' ← NOW' : ''}`
+  ).join('\n');
+ 
+  const prayantarLines = d.prayantardashas?.map(a =>
+    `${d.current?.lord}-${d.currentAntar?.lord}-${a.lord}: ${a.startDate.slice(0,7)} to ${a.endDate.slice(0,7)}`
+  ).join('\n') || '';
+ 
   const pastDashas = d.dashaSequence
-    .filter(ds=>new Date(ds.endDate)<new Date()).slice(-3)
-    .map(ds=>`${ds.lord}(${ds.startDate.slice(0,4)}-${ds.endDate.slice(0,4)})`).join(' > ');
-  const antarLines = d.antardashas.map(a=>
-    `${d.current?.lord}-${a.lord}:${a.startDate.slice(0,7)}-${a.endDate.slice(0,7)}${a===d.currentAntar?'*':''}`
-  ).join(' | ');
-  const nextDasha = d.dashaSequence.filter(ds=>new Date(ds.startDate)>new Date())[0];
-  const p2 = (key) => chart.houses[key]?.join(',')||'Empty';
+    .filter(ds => new Date(ds.endDate) < new Date())
+    .slice(-5)
+    .map(ds => `${ds.lord}: ${ds.startDate.slice(0,7)} to ${ds.endDate.slice(0,7)} (${ds.years.toFixed(1)} yrs)`)
+    .join('\n');
  
-  return `Name:${person.name} | Age:${age} | Today:${today} | DOB:${chart.input.dob} | Place:${chart.input.place}
-LAGNA:${chart.lagna.rasi} lord:${chart.lagna.lord} H${chart.lagna.lordHouse} | RASI:${chart.rasi.name} lord:${chart.rasi.lord} H${p[chart.rasi.lord]?.house} | NAK:${chart.nakshatra.name} P${chart.nakshatra.pada} lord:${chart.nakshatra.lord} Gana:${chart.nakshatra.gana} Nadi:${chart.nakshatra.nadi}
-PLANETS: ${planetLines}
-H2:${p2(2)} H5:${p2(5)} H6:${p2(6)} H7:${p2(7)} H8:${p2(8)} H10:${p2(10)} H11:${p2(11)}
-YOGAS: ${yogaLines}
-PAST DASHAS: ${pastDashas}
-NOW: ${d.current?.lord} Mahadasha H${p[d.current?.lord]?.house} | ${d.currentAntar?.lord} Bhukti H${p[d.currentAntar?.lord]?.house} ends:${d.currentAntar?.endDate?.slice(0,7)}
-ANTARDASHAS: ${antarLines}
-NEXT MAHADASHA: ${nextDasha?.lord} from ${nextDasha?.startDate?.slice(0,7)}`;
-}
+  const futureDashas = d.dashaSequence
+    .filter(ds => new Date(ds.startDate) > new Date())
+    .slice(0, 4)
+    .map(ds => `${ds.lord}: ${ds.startDate.slice(0,7)} to ${ds.endDate.slice(0,7)} (${ds.years.toFixed(1)} yrs)`)
+    .join('\n');
  
-function buildPrompt1(chart, person, question, age, today) {
-  const d = chart.dasha;
-  const p = chart.planets;
-  const curMaha = d.current?.lord;
-  const curAntar = d.currentAntar?.lord;
+  return `═══ VERIFIED BIRTH CHART ═══
+Person: ${person.name} | Age: ${age} | Gender: ${person.gender || ''} | Today: ${today}
+DOB: ${chart.input.dob} | Time: ${chart.input.tob} | Place: ${chart.input.place}
+Ayanamsha: Lahiri ${chart.ayanamsha}° (Sidereal)
  
-  return `You are Jothida Pandithar, master Tamil Jyotish astrologer with 40 years experience.
-RULES: Use === TITLE === for sections. Use --- Sub Heading --- inside sections. Write 2 detailed paragraphs under EVERY sub-heading. No bullet points ever. Speak as "you" to ${person.name}. Cite planet+house in every sentence. Be specific with years and ages.
+LAGNA: ${chart.lagna.rasi} (${chart.lagna.rasiEn}) ${chart.lagna.degInRasi.toFixed(2)}°
+  Lord: ${chart.lagna.lord} in H${chart.lagna.lordHouse} — ${chart.lagna.lordStatus}
+RASI: ${chart.rasi.name} (${chart.rasi.en}) | Lord: ${chart.rasi.lord} in H${p[chart.rasi.lord]?.house}
+NAKSHATRA: ${chart.nakshatra.name} (${chart.nakshatra.tamil}) Pada ${chart.nakshatra.pada}
+  Lord: ${chart.nakshatra.lord} | Deity: ${chart.nakshatra.deity} | Symbol: ${chart.nakshatra.symbol}
+  Gana: ${chart.nakshatra.gana} | Nadi: ${chart.nakshatra.nadi} | Yoni: ${chart.nakshatra.yoni} | Type: ${chart.nakshatra.type}
  
-CHART:
-${getChartSummary(chart, person, age, today)}
-${question ? `QUESTION: ${question}` : ''}
+ALL 9 PLANETS:
+${planetLines}
  
-Write PART 1 of the reading covering exactly these sections:
+HOUSES (occupants):
+${houseLines}
  
-=== CHARACTER & PERSONALITY ===
---- Physical Nature & Appearance ---
---- Inner Personality & Emotional World ---
---- Soul Drives & Core Strengths ---
+HOUSE ASPECTS:
+${aspectLines}
  
-=== LIFE SO FAR ===
---- Childhood Years (${parseInt(chart.input.dob)+0} to age 12) ---
---- Teenage & Early Adult Years ---
---- Recent Past (last Dasha before current) ---
+ALL YOGAS & DOSHAS (nullification checked):
+${yogaLines}
  
-=== RIGHT NOW — ${curMaha} DASHA ${curAntar} BHUKTI ===
---- What ${curMaha} in H${p[curMaha]?.house} Is Activating ---
---- What ${curAntar} in H${p[curAntar]?.house} Bhukti Brings ---
---- Opportunities & Warnings Right Now ---
+VIMSHOTTARI DASHA:
+Past Dashas:
+${pastDashas}
  
-=== CAREER & EDUCATION ===
---- Your Natural Path & Talents ---
---- When Career Peaks & Key Dasha Years ---
+Current Mahadasha: ${d.current?.lord} in H${p[d.current?.lord]?.house} (${d.current?.status || p[d.current?.lord]?.status})
+  Period: ${d.current?.startDate} → ${d.current?.endDate}
+Current Antardasha: ${d.currentAntar?.lord} in H${p[d.currentAntar?.lord]?.house}
+  Period: ${d.currentAntar?.startDate} → ${d.currentAntar?.endDate}
  
-=== WEALTH & FINANCES ===
---- How Money Comes To You ---
---- Best Financial Years & Lean Periods ---
+Praryantar Dashas in current Antardasha:
+${prayantarLines}
  
-Write all 5 sections fully now with 2 detailed paragraphs under each sub-heading.`;
-}
+All Antardashas in ${d.current?.lord} Mahadasha:
+${antarLines}
  
-function buildPrompt2(chart, person, question, age, today, yr) {
-  const d = chart.dasha;
-  const p = chart.planets;
- 
-  return `You are Jothida Pandithar, master Tamil Jyotish astrologer with 40 years experience.
-RULES: Use === TITLE === for sections. Use --- Sub Heading --- inside sections. Write 2 detailed paragraphs under EVERY sub-heading. No bullet points ever. Speak as "you" to ${person.name}. Cite planet+house in every sentence. Be specific with years and ages.
- 
-CHART:
-${getChartSummary(chart, person, age, today)}
-${question ? `QUESTION: ${question}` : ''}
- 
-Write PART 2 of the reading covering exactly these sections:
- 
-=== MARRIAGE & RELATIONSHIPS ===
---- Your Life Partner ---
---- Marriage Timing & Married Life ---
---- Mangal Dosha & Remedy ---
- 
-=== CHILDREN ===
---- Children & Family Life ---
- 
-=== HEALTH ===
---- Physical Constitution & Vulnerabilities ---
---- Health Warnings & Care Periods ---
- 
-=== NEXT 5 YEARS ===
---- ${yr} ---
---- ${yr+1} ---
---- ${yr+2} ---
---- ${yr+3} ---
---- ${yr+4} ---
- 
-=== DOSHAS & PARIHARAMS ===
---- Doshas Present In This Chart ---
---- Complete Remedies (temples, mantras, gemstones) ---
-${question ? `\n=== ANSWER TO YOUR QUESTION ===\n--- ${question} ---` : ''}
- 
-Write all sections fully now with 2 detailed paragraphs under each sub-heading.`;
+Upcoming Mahadashas:
+${futureDashas}`;
 }
  
 module.exports = async function handler(req, res) {
@@ -124,34 +134,110 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: 'dob, tob, place, name required' });
  
     const chart = buildFullChart(dob, tob, place, {
-      lagna: lagna||undefined, rasi: rasi||undefined, nakshatra: nakshatra||undefined,
+      lagna: lagna || undefined,
+      rasi:  rasi  || undefined,
+      nakshatra: nakshatra || undefined,
     });
  
-    const today = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
-    const age   = Math.floor((Date.now()-new Date(dob))/(365.25*24*3600*1000));
+    const today = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+    const age   = Math.floor((Date.now() - new Date(dob)) / (365.25 * 24 * 3600 * 1000));
     const yr    = new Date().getFullYear();
+    const p     = chart.planets;
+    const d     = chart.dasha;
+    const curM  = d.current?.lord;
+    const curA  = d.currentAntar?.lord;
+    const cs    = buildChartContext(chart, { name, gender }, age, today);
  
-    const p1 = buildPrompt1(chart, { name, gender: gender||'' }, question, age, today);
-    const p2 = buildPrompt2(chart, { name, gender: gender||'' }, question, age, today, yr);
+    // ── 3 parallel calls — each section focused ──
+    const [r1, r2, r3] = await Promise.all([
  
-    // Run both calls in parallel
-    const [msg1, msg2] = await Promise.all([
+      // CALL 1 — Who they are + what happened + right now
       anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 4000,
-        messages: [{ role: 'user', content: p1 }],
+        max_tokens: 2000,
+        system: MASTER_SYSTEM,
+        messages: [{ role: 'user', content: `${cs}
+ 
+Write Part 1. Two paragraphs under every sub-heading. No bullet points.
+ 
+=== CHARACTER & PERSONALITY ===
+--- Physical Appearance & Presence from ${chart.lagna.rasi} Lagna (Lord ${chart.lagna.lord} in H${chart.lagna.lordHouse} ${chart.lagna.lordStatus}) ---
+--- Emotional Nature from Moon in H${p.Moon?.house} in ${p.Moon?.nakshatra} Nakshatra ---
+--- Soul Character from ${chart.nakshatra.name} (${chart.nakshatra.deity} deity, ${chart.nakshatra.type} nature) ---
+--- Key Strengths, Deep Weaknesses, What Drives ${name} ---
+ 
+=== WHAT HAS HAPPENED IN LIFE ===
+--- Childhood (${d.dashaSequence[0]?.lord} Dasha, ${d.dashaSequence[0]?.startDate?.slice(0,4)}–${d.dashaSequence[1]?.startDate?.slice(0,4)}): ${p[d.dashaSequence[0]?.lord]?.status} in H${p[d.dashaSequence[0]?.lord]?.house} ---
+--- Growing Years (${d.dashaSequence[1]?.lord} Dasha, ${d.dashaSequence[1]?.startDate?.slice(0,4)}–${d.dashaSequence[2]?.startDate?.slice(0,4)}) ---
+--- Recent Past (${d.dashaSequence.filter(ds=>new Date(ds.endDate)<new Date()).slice(-1)[0]?.lord} Dasha before current) ---
+ 
+=== RIGHT NOW — ${curM} MAHADASHA ${curA} BHUKTI ===
+--- ${curM} in H${p[curM]?.house} (${p[curM]?.status}, Bala ${p[curM]?.bala}): What It Is Activating ---
+--- ${curA} in H${p[curA]?.house} (${p[curA]?.status}): What It Is Adding Right Now ---
+--- Exact Opportunities Open Now & Specific Dangers to Navigate ---` }]
       }),
+ 
+      // CALL 2 — Career, Wealth, Marriage, Children, Health
       anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 4000,
-        messages: [{ role: 'user', content: p2 }],
+        max_tokens: 2000,
+        system: MASTER_SYSTEM,
+        messages: [{ role: 'user', content: `${cs}
+ 
+Write Part 2. Two paragraphs under every sub-heading. No bullet points.
+ 
+=== CAREER & EDUCATION ===
+--- Natural Profession & Talents (H10: ${chart.houses[10]?.join(',') || 'Empty'}, 10th lord, Sun H${p.Sun?.house}) ---
+--- When Career Peaks: Exact Dasha Periods & Years ---
+ 
+=== WEALTH & FINANCES ===
+--- How Wealth Comes (H2: ${chart.houses[2]?.join(',') || 'Empty'}, H11: ${chart.houses[11]?.join(',') || 'Empty'}, Jupiter H${p.Jupiter?.house} ${p.Jupiter?.status}) ---
+--- Best Financial Years & Lean Periods Based on Dasha ---
+ 
+=== MARRIAGE & RELATIONSHIPS ===
+--- Life Partner: Nature, Qualities, Love or Arranged (H7: ${chart.houses[7]?.join(',') || 'Empty'}, Venus H${p.Venus?.house} ${p.Venus?.status}) ---
+--- Marriage Timing: Which Exact Dasha Period & Approximate Year ---
+--- Married Life: Harmony, Challenges, What ${name} Needs in a Partner ---
+--- Mangal Dosha: ${chart.yogas.find(y => y.name.includes('Mangal'))?.name || 'Not present'} — Full Analysis ---
+ 
+=== CHILDREN ===
+--- Children Prospects, Timing (H5: ${chart.houses[5]?.join(',') || 'Empty'}, Jupiter H${p.Jupiter?.house}) ---
+ 
+=== HEALTH ===
+--- Physical Constitution (${chart.nakshatra.nadi} Nadi, Lagna lord H${chart.lagna.lordHouse}) & Vulnerable Areas ---
+--- Health Timeline: Which Dasha Periods Need Care (H6: ${chart.houses[6]?.join(',') || 'Empty'}, H8: ${chart.houses[8]?.join(',') || 'Empty'}) ---` }]
+      }),
+ 
+      // CALL 3 — Next 5 years + Doshas & Remedies
+      anthropic.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 2000,
+        system: MASTER_SYSTEM,
+        messages: [{ role: 'user', content: `${cs}
+ 
+Write Part 3. Two paragraphs under every sub-heading. No bullet points.
+ 
+=== NEXT 5 YEARS — YEAR BY YEAR ===
+--- ${yr}: Antardasha running, exact events likely in career, money, relationships, health ---
+--- ${yr+1}: Antardasha, what opens and what to avoid ---
+--- ${yr+2}: Antardasha, major turning points ---
+--- ${yr+3}: Antardasha, themes and predictions ---
+--- ${yr+4}: Antardasha, what this year holds ---
+ 
+=== SPECIAL STRENGTHS OF THIS CHART ===
+--- Exceptional Yogas Present and Their Specific Life Gifts ---
+--- The Strongest Planet in the Chart and What It Promises ---
+ 
+=== DOSHAS & PARIHARAMS ===
+--- For Every Dosha in the Chart: Is It ACTIVE or NULLIFIED? Exact Reason Either Way ---
+--- Complete Remedy for Every ACTIVE Dosha: Specific temple (name it), deity, day, mantra with exact count, gemstone with finger and metal, colour, food donation ---
+${question ? `\n=== ANSWER TO YOUR QUESTION ===\n--- ${question}: Specific Astrological Answer with Timing ---` : ''}` }]
       }),
     ]);
  
-    const reading =
-      msg1.content.map(c=>c.text||'').join('') +
-      '\n\n' +
-      msg2.content.map(c=>c.text||'').join('');
+    const reading = [r1, r2, r3]
+      .map(r => r.content.map(c => c.text || '').join(''))
+      .join('\n\n');
  
     res.status(200).json({ ok: true, chart, reading });
  
