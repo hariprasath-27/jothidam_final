@@ -180,7 +180,7 @@ Write Part 1. Two paragraphs under every sub-heading. No bullet points.
       // CALL 2 — Career, Wealth, Marriage, Children, Health
       anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2000,
+        max_tokens: 3000,
         system: MASTER_SYSTEM,
         messages: [{ role: 'user', content: `${cs}
  
@@ -211,7 +211,7 @@ Write Part 2. Two paragraphs under every sub-heading. No bullet points.
       // CALL 3 — Next 5 years + Doshas & Remedies
       anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2000,
+        max_tokens: 3000,
         system: MASTER_SYSTEM,
         messages: [{ role: 'user', content: `${cs}
  
