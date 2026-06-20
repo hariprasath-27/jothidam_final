@@ -53,60 +53,148 @@ function buildPrompt(chart, person, question) {
   const h10 = chart.houses[10]?.join(',') || 'Empty';
   const h11 = chart.houses[11]?.join(',') || 'Empty';
  
-  return `You are Jothida Pandithar, a master Tamil Jyotish astrologer with 40 years of experience. Write a detailed, flowing reading for ${person.name}. Speak directly to them as "you". Never use bullet points — only paragraphs. Every statement must cite the exact planet and house number.
+  return `You are Jothida Pandithar, master Tamil Jyotish astrologer with 40 years experience. Write a deeply detailed reading for ${person.name}.
+ 
+FORMATTING RULES — FOLLOW EXACTLY:
+- Use === SECTION TITLE === for every main section header
+- Use --- Sub Topic --- for sub-headings inside each section
+- Write 2 to 3 paragraphs under each sub-heading
+- Never use bullet points or dashes as lists
+- Every sentence must name the exact planet and house number
+- Speak directly to ${person.name} as "you"
+- Be specific with years and ages always
  
 TODAY: ${today} | Name: ${person.name} | Age: ${age} | Gender: ${person.gender||''}
 DOB: ${chart.input.dob} | Time: ${chart.input.tob} | Place: ${chart.input.place}
-LAGNA: ${chart.lagna.rasi} Lord: ${chart.lagna.lord} in H${lagnaLordH}
-RASI: ${chart.rasi.name} Lord: ${chart.rasi.lord} in H${rasiLordH}
-NAKSHATRA: ${chart.nakshatra.name} Pada ${chart.nakshatra.pada} Lord: ${chart.nakshatra.lord} Gana: ${chart.nakshatra.gana} Nadi: ${chart.nakshatra.nadi}
+LAGNA: ${chart.lagna.rasi} (${chart.lagna.rasiEn}) Lord: ${chart.lagna.lord} in H${lagnaLordH}
+RASI: ${chart.rasi.name} (${chart.rasi.en}) Lord: ${chart.rasi.lord} in H${rasiLordH}
+NAKSHATRA: ${chart.nakshatra.name} Pada ${chart.nakshatra.pada} Lord: ${chart.nakshatra.lord} Gana: ${chart.nakshatra.gana} Nadi: ${chart.nakshatra.nadi} Yoni: ${chart.nakshatra.yoni}
+ 
 PLANETS:
 ${planetLines}
+ 
 HOUSES:
 ${houseLines}
+ 
 YOGAS:
 ${yogaLines}
-DASHA: ${curMaha} Mahadasha (${d.current?.startDate?.slice(0,7)} to ${d.current?.endDate?.slice(0,7)})
-ANTARDASHA: ${curAntar} Bhukti CURRENT
-ALL ANTARDASHAS: ${antarLines}
-PAST DASHAS: ${pastDashas}
-NEXT MAHADASHA: ${nextDasha?.lord} from ${nextDasha?.startDate?.slice(0,7)}
-${question ? `QUESTION: ${question}` : ''}
  
-Write the complete reading with these sections. Each section must have flowing paragraphs — no bullet points, no dashes, only connected prose. Cite planet+house in every sentence.
+DASHA: ${curMaha} Mahadasha (${d.current?.startDate?.slice(0,7)} to ${d.current?.endDate?.slice(0,7)})
+CURRENT ANTARDASHA: ${curAntar} Bhukti
+ALL ANTARDASHAS:
+${antarLines}
+PAST DASHAS:
+${pastDashas}
+NEXT MAHADASHA: ${nextDasha?.lord} from ${nextDasha?.startDate?.slice(0,7)}
+${question ? `QUESTION FROM ${person.name}: ${question}` : ''}
+ 
+Now write the full reading using === and --- formatting as shown below. Every section must be detailed.
  
 === CHARACTER & PERSONALITY ===
-Two detailed paragraphs: physical appearance and personality from ${chart.lagna.rasi} Lagna with lord in H${lagnaLordH}. Emotional nature from Moon in H${moonH} and ${chart.nakshatra.name} Nakshatra. Strengths, weaknesses, how they think and what drives them.
+ 
+--- Physical Appearance & First Impression ---
+Two paragraphs on how ${person.name} looks and presents to the world from ${chart.lagna.rasi} Lagna. What ${chart.lagna.lord} in H${lagnaLordH} adds to the physical self.
+ 
+--- Inner Nature & Emotional World ---
+Two paragraphs on the inner personality from ${chart.rasi.name} Rasi with its lord in H${rasiLordH}. The emotional world from Moon in H${moonH}. How they feel things deeply inside versus what they show outside.
+ 
+--- Soul Nature & Core Drives ---
+Two paragraphs on ${chart.nakshatra.name} Nakshatra with ${chart.nakshatra.gana} Gana and ${chart.nakshatra.nadi} Nadi. What drives ${person.name} at the soul level. Their deepest strengths and genuine blind spots.
  
 === WHAT HAS HAPPENED IN LIFE ===
-Two detailed paragraphs covering each past Dasha period with approximate years. What happened in childhood, teenage years, early adulthood based on each Dasha lord's placement in the chart.
  
-=== CURRENT PERIOD ${curMaha} DASHA ${curAntar} BHUKTI ===
-Two detailed paragraphs on what is happening right now as of ${today}. What ${curMaha} in H${p[curMaha]?.house} activates. What ${curAntar} Bhukti adds. Career, relationships, finances, inner life right now. Key opportunities and challenges.
+--- Childhood & Early Years ---
+Two paragraphs on the earliest Dasha periods. What the Dasha lords' positions in the chart brought during childhood years. Key events, family environment, early shaping influences.
  
-=== CAREER AND EDUCATION ===
-Two detailed paragraphs. H10 (${h10}), Sun in H${sunH}, Mercury in H${mercH}, Saturn in H${satH}. Specific professions, natural gifts, when career peaks, which Dasha brings breakthrough.
+--- Teenage Years & Education ---
+Two paragraphs on the Dasha period covering ages 12 to 18. What this lord in its house position caused. Education, friendships, challenges, first ambitions.
  
-=== WEALTH AND FINANCES ===
-One detailed paragraph. H2 (${h2}), H11 (${h11}), Jupiter in H${jupH}. How wealth comes, best financial years, lean periods.
+--- Early Adulthood ---
+Two paragraphs on the most recent past Dasha covering ages 18 to now. Career beginnings, relationships, turning points, what was gained and what was lost.
  
-=== MARRIAGE AND RELATIONSHIPS ===
-Two detailed paragraphs. H7 (${h7}), Venus in H${venH}, Jupiter in H${jupH}. Partner's nature, love or arranged, timing, Mars in H${marsH} Mangal Dosha if present and remedy.
+=== CURRENT PERIOD — ${curMaha} DASHA ${curAntar} BHUKTI ===
+ 
+--- What ${curMaha} Mahadasha Means For You ---
+Two paragraphs explaining ${curMaha} placed in H${p[curMaha]?.house}. Which houses it rules. What major themes it has activated since it started. How this Mahadasha has been reshaping ${person.name}'s life.
+ 
+--- What ${curAntar} Bhukti Is Bringing Right Now ---
+Two paragraphs on ${curAntar} placed in H${p[curAntar]?.house}. Whether it harmonises or creates tension with the Mahadasha lord. What is specifically active right now in career, relationships, finances, and inner life.
+ 
+--- Opportunities & Warnings For This Period ---
+Two paragraphs on what ${person.name} must not miss right now and what dangers to navigate carefully in this exact Dasha-Bhukti combination.
+ 
+=== CAREER & EDUCATION ===
+ 
+--- Natural Career Path ---
+Two paragraphs on H10 (${h10}), 10th lord, Sun in H${sunH}. What profession is written in the stars. The specific fields and roles that suit ${person.name} and the astrological reason.
+ 
+--- Career Timeline & Peak Years ---
+Two paragraphs on Mercury in H${mercH} and Saturn in H${satH}. When career truly takes off. Which specific Dasha period brings the big breakthrough. The years of peak professional achievement.
+ 
+=== WEALTH & FINANCES ===
+ 
+--- How Money Comes ---
+Two paragraphs on H2 (${h2}), H11 (${h11}), Jupiter in H${jupH}. Whether wealth comes through job, business, or other means. Their natural relationship with money.
+ 
+--- Financial Timeline ---
+Two paragraphs on the best financial years and the lean periods based on Dasha. When abundance arrives and when to be careful.
+ 
+=== MARRIAGE & RELATIONSHIPS ===
+ 
+--- Your Life Partner ---
+Two paragraphs on H7 (${h7}), Venus in H${venH}, Jupiter in H${jupH}. The nature, character, and qualities of the destined life partner. Love or arranged marriage and why astrologically.
+ 
+--- Marriage Timing & Married Life ---
+Two paragraphs on which Dasha period brings marriage and approximate timing. What married life looks like — areas of deep harmony and areas of challenge. How ${person.name} gives and receives love.
+ 
+--- Mangal Dosha & Remedy ---
+Two paragraphs on Mars in H${marsH}. Whether Mangal Dosha is present and exactly what effect it has. The specific remedy.
  
 === CHILDREN ===
-One detailed paragraph. H5 (${h5}), Jupiter in H${jupH}. Prospects, timing, relationship with children.
+ 
+--- Children & Family ---
+Two paragraphs on H5 (${h5}) and Jupiter in H${jupH}. Prospects for children and timing. The kind of parent ${person.name} will be and the relationship with their children.
  
 === HEALTH ===
-One detailed paragraph. Lagna lord in H${lagnaLordH}, H6 (${h6}), H8 (${h8}). Constitution, vulnerable areas, which Dasha periods to be careful.
  
-=== NEXT 5 YEARS YEAR BY YEAR ===
-One paragraph per year from ${yr} to ${yr+5}. Each year: which Antardasha is running, what to expect in career, money, relationships, health. Which year is best, which needs caution.
+--- Physical Constitution ---
+Two paragraphs on Lagna lord in H${lagnaLordH} and ${chart.nakshatra.nadi} Nadi constitution. The fundamental body type and immunity. Which body parts are strong and which are vulnerable.
  
-=== DOSHAS AND PARIHARAMS ===
-Two detailed paragraphs. Every Dosha present: exact problem it causes. Complete remedy — specific temple name, deity, day, mantra with count, gemstone with finger and metal, colour to wear or donate.${question ? `
+--- Health Warnings & Care Periods ---
+Two paragraphs on H6 (${h6}), H8 (${h8}) and their lords. Specific disease tendencies to watch. Which Dasha periods need extra health care. Mental and emotional health from Moon in H${moonH}.
+ 
+=== NEXT 5 YEARS — YEAR BY YEAR ===
+ 
+--- ${yr} ---
+One paragraph: which Antardasha is running, what it means in this chart, what to expect and what to do this year.
+ 
+--- ${yr+1} ---
+One paragraph: Antardasha, what it brings for career, money, relationships, health.
+ 
+--- ${yr+2} ---
+One paragraph: Antardasha, what it brings and key focus area.
+ 
+--- ${yr+3} ---
+One paragraph: Antardasha, major events and themes.
+ 
+--- ${yr+4} ---
+One paragraph: Antardasha, what this year holds.
+ 
+--- ${yr+5} ---
+One paragraph: Antardasha, the year's promise and challenges.
+ 
+=== DOSHAS & PARIHARAMS ===
+ 
+--- Doshas Present In This Chart ---
+Two paragraphs naming every Dosha, what problem each creates, and the astrological reason.
+ 
+--- Complete Remedies ---
+Two paragraphs giving the full remedy for each Dosha — specific temple name in Tamil Nadu or Kerala, presiding deity, day of week, exact mantra and number of times to chant, gemstone with finger and metal, colour to wear, food to donate. Make every remedy practical and doable immediately.${question ? `
  
 === ANSWER TO YOUR QUESTION ===
-One detailed paragraph answering "${question}" with specific astrological reasoning and timing.` : ''}`;
+ 
+--- ${question} ---
+Two paragraphs giving a specific, honest, astrologically reasoned answer with clear timing.` : ''}`;
 }
  
 module.exports = async function handler(req, res) {
@@ -122,7 +210,7 @@ module.exports = async function handler(req, res) {
  
     const chart = buildFullChart(dob, tob, place, {
       lagna: lagna || undefined,
-      rasi: rasi || undefined,
+      rasi:  rasi  || undefined,
       nakshatra: nakshatra || undefined,
     });
  
@@ -130,7 +218,7 @@ module.exports = async function handler(req, res) {
  
     const message = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4000,
+      max_tokens: 6000,
       messages: [{ role: 'user', content: prompt }],
     });
  
