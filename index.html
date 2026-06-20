@@ -116,6 +116,10 @@ a{color:var(--gold);text-decoration:none}
 .reading-wrap{background:var(--card);border:0.5px solid var(--border);border-radius:14px;padding:22px;margin-bottom:16px;display:none}
 .reading-body{font-size:13.5px;color:#ccc4b8;line-height:1.95;white-space:pre-wrap;min-height:40px}
 .sec-head{display:block;color:var(--gold);font-weight:600;font-size:12px;letter-spacing:.5px;margin:18px 0 6px;border-left:2px solid var(--gold);padding-left:10px}
+.r-section-head{color:var(--gold);font-weight:700;font-size:15px;letter-spacing:1px;margin:32px 0 6px;padding:10px 16px;background:rgba(201,168,76,.07);border-left:3px solid var(--gold);border-radius:0 6px 6px 0}
+.r-sub-head{color:var(--gold2);font-weight:600;font-size:13px;margin:20px 0 6px;padding:6px 12px;border-left:2px solid rgba(201,168,76,.4);background:rgba(201,168,76,.04);border-radius:0 4px 4px 0}
+.r-para{margin:0 0 12px;color:#ccc4b8;font-size:13.5px;line-height:1.9}
+.r-para:empty{display:none}
 .loading-row{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;padding:12px 0}
 .dot{width:5px;height:5px;border-radius:50%;background:var(--gold);animation:pu 1.2s infinite}
 .dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
@@ -503,9 +507,14 @@ function renderChart(chart) {
 
 function formatReading(text) {
   return text
-    .replace(/===\s*(.+?)\s*===/g, '<span class="sec-head">✦ $1</span>')
+    .replace(/===\s*(.+?)\s*===/g, '</p><div class="r-section-head">✦ $1</div><p class="r-para">')
+    .replace(/---\s*(.+?)\s*---/g, '</p><div class="r-sub-head">$1</div><p class="r-para">')
     .replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--gold2)">$1</strong>')
-    .replace(/\*([^*\n]+)\*/g, '<em style="color:var(--muted)">$1</em>');
+    .replace(/\*([^*\n]+)\*/g, '<em style="color:var(--muted)">$1</em>')
+    .replace(/\n\n/g, '</p><p class="r-para">')
+    .replace(/\n/g, ' ')
+    .replace(/^/, '<p class="r-para">')
+    .replace(/$/, '</p>');
 }
 
 async function generateReading() {
