@@ -51,7 +51,7 @@ function buildChartContext(chart, person, age, today) {
   ).join('\n');
  
   const houseLines = Object.entries(chart.houses)
-    .map(([h, pl]) => `H${h} (${HOUSE_SIGNIF[h]?.split(',')[0]}): ${pl.length ? pl.join(', ') : 'Empty'}`)
+    .map(([h, pl]) => `H${h} (${(HOUSE_SIGNIF[h]||'').split(',')[0]}): ${pl.length ? pl.join(', ') : 'Empty'}`)
     .join('\n');
  
   const aspectLines = Object.entries(chart.houseAspects || {})
@@ -167,8 +167,8 @@ Write Part 1. Two paragraphs under every sub-heading. No bullet points.
 --- Key Strengths, Deep Weaknesses, What Drives ${name} ---
  
 === WHAT HAS HAPPENED IN LIFE ===
---- Childhood (${d.dashaSequence[0]?.lord} Dasha, ${d.dashaSequence[0]?.startDate?.slice(0,4)}–${d.dashaSequence[1]?.startDate?.slice(0,4)}): ${p[d.dashaSequence[0]?.lord]?.status} in H${p[d.dashaSequence[0]?.lord]?.house} ---
---- Growing Years (${d.dashaSequence[1]?.lord} Dasha, ${d.dashaSequence[1]?.startDate?.slice(0,4)}–${d.dashaSequence[2]?.startDate?.slice(0,4)}) ---
+--- Childhood (${d.dashaSequence[0]?.lord} Dasha, ${d.dashaSequence[0]?.startDate?.slice(0,4)}–${d.dashaSequence[1]?.startDate?.slice(0,4)||'present'}): ${p[d.dashaSequence[0]?.lord]?.status||''} in H${p[d.dashaSequence[0]?.lord]?.house||'?'} ---
+--- Growing Years (${d.dashaSequence[1]?.lord||''} Dasha, ${d.dashaSequence[1]?.startDate?.slice(0,4)||''}–${d.dashaSequence[2]?.startDate?.slice(0,4)||''}) ---
 --- Recent Past (${d.dashaSequence.filter(ds=>new Date(ds.endDate)<new Date()).slice(-1)[0]?.lord} Dasha before current) ---
  
 === RIGHT NOW — ${curM} MAHADASHA ${curA} BHUKTI ===
@@ -180,7 +180,7 @@ Write Part 1. Two paragraphs under every sub-heading. No bullet points.
       // CALL 2 — Career, Wealth, Marriage, Children, Health
       anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 3000,
+        max_tokens: 2000,
         system: MASTER_SYSTEM,
         messages: [{ role: 'user', content: `${cs}
  
@@ -211,7 +211,7 @@ Write Part 2. Two paragraphs under every sub-heading. No bullet points.
       // CALL 3 — Next 5 years + Doshas & Remedies
       anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 3000,
+        max_tokens: 2000,
         system: MASTER_SYSTEM,
         messages: [{ role: 'user', content: `${cs}
  
