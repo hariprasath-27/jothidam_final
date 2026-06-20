@@ -24,7 +24,7 @@ module.exports = async function handler(req, res) {
     const prompt = buildReadingPrompt(chart, { name, gender: gender || 'not specified' }, question);
 
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-latest',
+      model: 'claude-3-sonnet-20240229',
       max_tokens: 4000,
       system: 'You are a master Tamil Jyotish astrologer with 40+ years of experience. Give precise, chart-specific readings. Every statement must cite exact planetary positions and house numbers. Use === SECTION === headers. Be specific with years and ages. Never be vague or generic.',
       messages: [{ role: 'user', content: prompt }],
