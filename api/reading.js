@@ -22,23 +22,29 @@ function buildPrompt(chart, person, question) {
  
   const yogaLines = chart.yogas.map(y=>`[${y.type.toUpperCase()}] ${y.name}: ${y.desc}`).join('\n');
  
-  const pastDashas = d.dashaSequence.filter(ds=>new Date(ds.endDate)<new Date())
-    .slice(-4).map(ds=>`${ds.lord} Dasha: ${ds.startDate.slice(0,7)} to ${ds.endDate.slice(0,7)}`).join('\n');
+  const pastDashas = d.dashaSequence
+    .filter(ds => new Date(ds.endDate) < new Date())
+    .slice(-4)
+    .map(ds => `${ds.lord} Dasha: ${ds.startDate.slice(0,7)} to ${ds.endDate.slice(0,7)}`)
+    .join('\n');
  
-  const antarLines = d.antardashas.map(a=>
-    `${d.current?.lord}-${a.lord}: ${a.startDate.slice(0,7)} to ${a.endDate.slice(0,7)}${a===d.currentAntar?' CURRENT':''}`
+  const antarLines = d.antardashas.map(a =>
+    `${d.current?.lord}-${a.lord}: ${a.startDate.slice(0,7)} to ${a.endDate.slice(0,7)}${a === d.currentAntar ? ' CURRENT' : ''}`
   ).join('\n');
  
-  const nextDasha = d.dashaSequence.filter(ds=>new Date(ds.startDate)>new Date())[0];
+  const nextDasha = d.dashaSequence.filter(ds => new Date(ds.startDate) > new Date())[0];
+  const curMaha  = d.current?.lord;
+  const curAntar = d.currentAntar?.lord;
+ 
   const moonH = p['Moon']?.house;
-  const sunH = p['Sun']?.house;
+  const sunH  = p['Sun']?.house;
   const marsH = p['Mars']?.house;
   const mercH = p['Mercury']?.house;
-  const jupH = p['Jupiter']?.house;
-  const venH = p['Venus']?.house;
-  const satH = p['Saturn']?.house;
+  const jupH  = p['Jupiter']?.house;
+  const venH  = p['Venus']?.house;
+  const satH  = p['Saturn']?.house;
   const lagnaLordH = chart.lagna.lordHouse;
-  const rasiLordH = p[chart.rasi.lord]?.house;
+  const rasiLordH  = p[chart.rasi.lord]?.house;
   const h2  = chart.houses[2]?.join(',')  || 'Empty';
   const h5  = chart.houses[5]?.join(',')  || 'Empty';
   const h6  = chart.houses[6]?.join(',')  || 'Empty';
@@ -46,76 +52,61 @@ function buildPrompt(chart, person, question) {
   const h8  = chart.houses[8]?.join(',')  || 'Empty';
   const h10 = chart.houses[10]?.join(',') || 'Empty';
   const h11 = chart.houses[11]?.join(',') || 'Empty';
-  const curMaha  = d.current?.lord;
-  const curAntar = d.currentAntar?.lord;
  
-  return `You are Jothida Pandithar, the most revered Tamil Jyotish astrologer with 40 years of mastery. You give readings so accurate and profound that people travel from distant villages to sit with you. You speak with warmth, depth, and authority. You never rush. You never summarise. You go deep into every section.
+  return `You are Jothida Pandithar, a master Tamil Jyotish astrologer with 40 years of experience. Write a detailed, flowing reading for ${person.name}. Speak directly to them as "you". Never use bullet points — only paragraphs. Every statement must cite the exact planet and house number.
  
-RULES YOU MUST NEVER BREAK:
-1. NEVER use bullet points, dashes as lists, or numbered lists anywhere. Only flowing connected paragraphs.
-2. Every sentence must name the exact planet AND house number AND the astrological reason.
-3. Every section must have at least 3 full deep paragraphs. Never write short sections.
-4. Speak directly to ${person.name} as "you" throughout — warm, personal, like a trusted wise elder.
-5. Be specific with years and ages. Never be vague.
- 
-TODAY: ${today}
-Name: ${person.name} | Age: ${age} | Gender: ${person.gender||''}
+TODAY: ${today} | Name: ${person.name} | Age: ${age} | Gender: ${person.gender||''}
 DOB: ${chart.input.dob} | Time: ${chart.input.tob} | Place: ${chart.input.place}
- 
-LAGNA: ${chart.lagna.rasi} (${chart.lagna.rasiEn}) Lord: ${chart.lagna.lord} in H${lagnaLordH}
-RASI: ${chart.rasi.name} (${chart.rasi.en}) Lord: ${chart.rasi.lord} in H${rasiLordH}
-NAKSHATRA: ${chart.nakshatra.name} Pada ${chart.nakshatra.pada} Lord: ${chart.nakshatra.lord} Gana: ${chart.nakshatra.gana} Nadi: ${chart.nakshatra.nadi} Yoni: ${chart.nakshatra.yoni}
- 
+LAGNA: ${chart.lagna.rasi} Lord: ${chart.lagna.lord} in H${lagnaLordH}
+RASI: ${chart.rasi.name} Lord: ${chart.rasi.lord} in H${rasiLordH}
+NAKSHATRA: ${chart.nakshatra.name} Pada ${chart.nakshatra.pada} Lord: ${chart.nakshatra.lord} Gana: ${chart.nakshatra.gana} Nadi: ${chart.nakshatra.nadi}
 PLANETS:
 ${planetLines}
- 
 HOUSES:
 ${houseLines}
- 
 YOGAS:
 ${yogaLines}
- 
-DASHA:
-Past: ${pastDashas}
-Current Mahadasha: ${curMaha} (${d.current?.startDate?.slice(0,7)} to ${d.current?.endDate?.slice(0,7)})
-Antardashas: ${antarLines}
-Next: ${nextDasha?.lord} from ${nextDasha?.startDate?.slice(0,7)}
+DASHA: ${curMaha} Mahadasha (${d.current?.startDate?.slice(0,7)} to ${d.current?.endDate?.slice(0,7)})
+ANTARDASHA: ${curAntar} Bhukti CURRENT
+ALL ANTARDASHAS: ${antarLines}
+PAST DASHAS: ${pastDashas}
+NEXT MAHADASHA: ${nextDasha?.lord} from ${nextDasha?.startDate?.slice(0,7)}
 ${question ? `QUESTION: ${question}` : ''}
  
-Write the complete reading. Every section deep and thorough.
+Write the complete reading with these sections. Each section must have flowing paragraphs — no bullet points, no dashes, only connected prose. Cite planet+house in every sentence.
  
 === CHARACTER & PERSONALITY ===
-Write 4 full paragraphs: physical appearance from ${chart.lagna.rasi} Lagna, core personality from ${chart.rasi.name} Rasi lord in H${rasiLordH}, emotional nature from Moon in H${moonH}, soul instincts from ${chart.nakshatra.name} Nakshatra ${chart.nakshatra.gana} Gana. Deep strengths and weaknesses. How they think and what drives them. How others see them versus who they truly are.
+Two detailed paragraphs: physical appearance and personality from ${chart.lagna.rasi} Lagna with lord in H${lagnaLordH}. Emotional nature from Moon in H${moonH} and ${chart.nakshatra.name} Nakshatra. Strengths, weaknesses, how they think and what drives them.
  
 === WHAT HAS HAPPENED IN LIFE ===
-Write 4 full paragraphs reading each past Dasha period with years and ages. What happened in childhood, teenage years, early adulthood. Connect each Dasha lord's position in the chart to real life events — education, family, relationships, career beginnings, challenges, turning points.
+Two detailed paragraphs covering each past Dasha period with approximate years. What happened in childhood, teenage years, early adulthood based on each Dasha lord's placement in the chart.
  
-=== CURRENT PERIOD ${curMaha} MAHADASHA ${curAntar} BHUKTI ===
-Write 4 full paragraphs on right now as of ${today}. Explain ${curMaha} Mahadasha fully — where it sits, what houses it rules, what it activates. Then ${curAntar} Bhukti — how it combines. What ${person.name} is experiencing now in career, relationships, finances, inner life. What opportunities must not be missed. What dangers to navigate. The overall lesson of this period.
+=== CURRENT PERIOD ${curMaha} DASHA ${curAntar} BHUKTI ===
+Two detailed paragraphs on what is happening right now as of ${today}. What ${curMaha} in H${p[curMaha]?.house} activates. What ${curAntar} Bhukti adds. Career, relationships, finances, inner life right now. Key opportunities and challenges.
  
 === CAREER AND EDUCATION ===
-Write 4 full paragraphs. H10 (${h10}), 10th lord, Sun in H${sunH}, Mercury in H${mercH}, Saturn in H${satH}. Specific professions that suit them and why astrologically. Natural career gifts. When career takes off — which Dasha. Obstacles and why. Higher education from H5. Specific years for career breakthroughs.
+Two detailed paragraphs. H10 (${h10}), Sun in H${sunH}, Mercury in H${mercH}, Saturn in H${satH}. Specific professions, natural gifts, when career peaks, which Dasha brings breakthrough.
  
 === WEALTH AND FINANCES ===
-Write 3 full paragraphs. H2 (${h2}), H11 (${h11}), Jupiter in H${jupH}. How wealth comes — job, business, inheritance. Strongest wealth years. Lean periods. Their relationship with money. Long-term financial picture.
+One detailed paragraph. H2 (${h2}), H11 (${h11}), Jupiter in H${jupH}. How wealth comes, best financial years, lean periods.
  
 === MARRIAGE AND RELATIONSHIPS ===
-Write 4 full paragraphs. H7 (${h7}), 7th lord, Venus in H${venH}, Jupiter in H${jupH}. Nature and qualities of destined partner. Love or arranged and why. Timing — which Dasha period. Married life harmony and challenges. How they behave in relationships. Mars in H${marsH} — Mangal Dosha impact and full remedy if present.
+Two detailed paragraphs. H7 (${h7}), Venus in H${venH}, Jupiter in H${jupH}. Partner's nature, love or arranged, timing, Mars in H${marsH} Mangal Dosha if present and remedy.
  
 === CHILDREN ===
-Write 2 full paragraphs. H5 (${h5}), Jupiter in H${jupH}, 5th lord. Prospects and timing for children. Relationship with children. Intelligence and creativity from H5.
+One detailed paragraph. H5 (${h5}), Jupiter in H${jupH}. Prospects, timing, relationship with children.
  
 === HEALTH ===
-Write 3 full paragraphs. Lagna lord in H${lagnaLordH}, H6 (${h6}), H8 (${h8}). Physical constitution from ${chart.lagna.rasi} Lagna and ${chart.nakshatra.nadi} Nadi. Vulnerable body parts and disease tendencies. Which Dasha periods need health care. Mental health from Moon in H${moonH}. Lifestyle guidance.
+One detailed paragraph. Lagna lord in H${lagnaLordH}, H6 (${h6}), H8 (${h8}). Constitution, vulnerable areas, which Dasha periods to be careful.
  
 === NEXT 5 YEARS YEAR BY YEAR ===
-Write one full paragraph for each year ${yr} to ${yr+5}. For each year: exact Antardasha running, what it means in this chart, career, money, relationships, health outlook. Which year is most powerful. Which needs most caution. Practical guidance for each year.
+One paragraph per year from ${yr} to ${yr+5}. Each year: which Antardasha is running, what to expect in career, money, relationships, health. Which year is best, which needs caution.
  
 === DOSHAS AND PARIHARAMS ===
-Write 3 full paragraphs. For every Dosha in this chart: what problem it creates and why astrologically. Complete remedy — actual temple name in Tamil Nadu or Kerala, presiding deity, specific day, exact mantra and number of times, gemstone with finger and metal, colour, food to donate, specific ritual. Make remedies so clear ${person.name} can do them this week.${question ? `
+Two detailed paragraphs. Every Dosha present: exact problem it causes. Complete remedy — specific temple name, deity, day, mantra with count, gemstone with finger and metal, colour to wear or donate.${question ? `
  
 === ANSWER TO YOUR QUESTION ===
-Write 2 full paragraphs answering "${question}" with specific astrological reasoning and clear timing.` : ''}`;
+One detailed paragraph answering "${question}" with specific astrological reasoning and timing.` : ''}`;
 }
  
 module.exports = async function handler(req, res) {
@@ -137,11 +128,9 @@ module.exports = async function handler(req, res) {
  
     const prompt = buildPrompt(chart, { name, gender: gender || '' }, question);
  
-    // Regular JSON response — works on Vercel free tier
-    // Using claude-sonnet-4-6 with 6000 tokens for deep detailed reading
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 6000,
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 4000,
       messages: [{ role: 'user', content: prompt }],
     });
  
